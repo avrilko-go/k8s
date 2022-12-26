@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-dp
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: flask-dp
+  template:
+    metadata:
+      labels:
+        app: flask-dp
+    spec:
+      containers:
+        - name: flask
+          image: lyzhang1999/hello-world-flask:latest
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 5000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flask-svc
+spec:
+  type: NodePort
+  selector:
+    app: flask-dp
+  ports:
+    - port: 5000
+      targetPort: 5000
+      protocol: TCP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flask-ing
+  labels:
+    name: flask-ing
+spec:
+  ingressClassName: flask-ink
+  rules:
+    - host: flask.test
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: flask-svc
+                port:
+                  number: 5000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: flask-ink
+  labels:
+    name: flask-ink
+spec:
+  controller: k8s.io/ingress-nginx
